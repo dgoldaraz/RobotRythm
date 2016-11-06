@@ -1,9 +1,18 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
-public class Room : MonoBehaviour {
+public class Room : MonoBehaviour
+{
 
+    struct Door
+    {
+        Vector2 center; //
+        float size; // width/height
+        char position; // Sets wich position is the door, l -left, r- right, u - up, d - down
 
+    };
+    private AssetFabric m_assetFabric;
     private GameObject m_parent;
     private GameObject m_lChild;
     private GameObject m_rChild;
@@ -13,7 +22,18 @@ public class Room : MonoBehaviour {
     private Vector3 m_center;
 
     private GameObject m_quad;
+
+    private List<Door> m_doors;
 	
+    public void Init()
+    {
+
+        m_assetFabric = GameObject.FindObjectOfType<AssetFabric>();
+        if(m_assetFabric == null)
+        {
+            Debug.LogError("No asset Fabric");
+        }
+    }
 
     public bool IsLeaf()
     {
@@ -93,6 +113,7 @@ public class Room : MonoBehaviour {
         }
         if(component)
         {
+            component.Init();
             component.SetParent(gameObject);
             component.SetCenter(center);
             component.SetWidth(w);
@@ -197,10 +218,10 @@ public class Room : MonoBehaviour {
         //Create a quad and give the position and w/h
         if(IsLeaf())
         {
-            m_quad = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            m_quad = m_assetFabric.GetRandomRoom(m_width, m_height, m_center);
             m_quad.transform.SetParent(transform);
-            m_quad.transform.position = m_center;
-            m_quad.transform.localScale = new Vector3(m_width, m_height, 1);
+            BSPDungeon dungeon = GameObject.FindObjectOfType<BSPDungeon>();
+            dungeon.AddLeaf(this);
         }
         else
         {
@@ -208,4 +229,6 @@ public class Room : MonoBehaviour {
             m_rChild.GetComponent<Room>().Create();
         }
     }
+
+
 }

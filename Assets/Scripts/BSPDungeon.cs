@@ -9,7 +9,7 @@ using System.Collections.Generic;
 public class BSPDungeon : MonoBehaviour
 {
     private GameObject m_root;
-   // private List<Room> leafNodes;
+    private List<Room> leafNodes;
 
     public float initialW = 100;
     public float initialH = 100;
@@ -18,15 +18,18 @@ public class BSPDungeon : MonoBehaviour
 	// Use this for initialization
 	void Start ()
     {
+        leafNodes = new List<Room>();
         //Create mainRoom
         m_root = new GameObject("Root");
         m_root.transform.SetParent(transform);
         Room roomComponent = m_root.AddComponent<Room>();
+        roomComponent.Init();
         //Instantiate(roomTemplate, transform.position, Quaternion.identity) as Room;
         roomComponent.SetWidth(initialW);
         roomComponent.SetHeight(initialH);
         roomComponent.SetCenter(transform.position);
         DivideRooms();
+        
         roomComponent.Create();
     }
 	
@@ -36,17 +39,14 @@ public class BSPDungeon : MonoBehaviour
 	
 	}
 
-    public void AddLeafs(List<Room> leafs)
+    public void AddLeaf(Room leaf)
     {
         //Add new leafs to the list
         //Remove parent if it's contained
-        foreach(Room r in leafs)
+        if (leaf.IsLeaf())
         {
-            if (r.IsLeaf())
-            {
-                leafs.Remove(r.GetParent().GetComponent<Room>());
-                leafs.Add(r);
-            }
+            leafNodes.Remove(leaf.GetParent().GetComponent<Room>());
+            leafNodes.Add(leaf);
         }
     }
 
