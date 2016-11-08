@@ -4,30 +4,33 @@ using System.Collections.Generic;
 
 public class Room : MonoBehaviour
 {
-
-    struct Door
+    [System.Serializable]
+    public struct Door
     {
-        Vector2 center; //
-        float size; // width/height
-        char position; // Sets wich position is the door, l -left, r- right, u - up, d - down
-
+        public Vector3 center; //
+        public float size; // width/height
+        public char position; // Sets wich position is the door, l -left, r- right, u - up, d - down
     };
+
     private AssetFabric m_assetFabric;
     private GameObject m_parent;
     private GameObject m_lChild;
     private GameObject m_rChild;
+    private GameObject m_brother;
 
     private float m_width = 100.0f;
     private float m_height = 100.0f;
     private Vector3 m_center;
 
     private GameObject m_quad;
-
-    private List<Door> m_doors;
+    public List<Door> m_doors;
+    private bool m_divideH = false; //Stores if the division is Horizontal or Vertical
+    private float m_divisionPos = 0.0f; // Stores where the division occurs
+    private bool m_doorsCreated = false;
 	
     public void Init()
     {
-
+        m_doors = new List<Door>();
         m_assetFabric = GameObject.FindObjectOfType<AssetFabric>();
         if(m_assetFabric == null)
         {
@@ -90,6 +93,16 @@ public class Room : MonoBehaviour
         return m_rChild;
     }
 
+    public GameObject GetBrother()
+    {
+        return m_brother;
+    }
+
+    public void SetBrother(GameObject brother)
+    {
+        m_brother = brother;
+    }
+
     void CreateChild(Vector3 center,float w, float h, bool left)
     {
         Room component = null;
@@ -119,6 +132,8 @@ public class Room : MonoBehaviour
             component.SetWidth(w);
             component.SetHeight(h);
         }
+        BSPDungeon dungeon = GameObject.FindObjectOfType<BSPDungeon>();
+        dungeon.AddLeaf(component);
     }
 
     public void SetParent(GameObject p)
@@ -170,13 +185,17 @@ public class Room : MonoBehaviour
     void DivideHorizontally()
     {
         //Calculate offset
-        int offset = (int)(m_height * 0.1);
-        //if(m_height - offset * 2 > 5)
-        {
-            //We are able to create a room
-            float randomY = Random.Range(offset, (int)m_height - offset);
-            //Divide and create two new rooms
 
+        //We are able to create a room
+        BSPDungeon dungeon = GameObject.FindObjectOfType<BSPDungeon>();
+        float minSize = dungeon.GetMinSize();
+        if (m_height > minSize)
+        {
+            float randomY = Random.Range(minSize, (int)m_height - minSize);
+            m_divideH = true;
+            m_divisionPos = m_height - randomY;
+
+            //Divide and create two new rooms
             Vector3 bottom = m_center - new Vector3(0.0f, m_height * 0.5f, 0.0f);
             float lHeight = randomY;
             float rHeight = m_height - randomY;
@@ -186,6 +205,8 @@ public class Room : MonoBehaviour
 
             CreateChild(upCenter, m_width, lHeight, true);
             CreateChild(downCenter, m_width, rHeight, false);
+            m_lChild.GetComponent<Room>().SetBrother(m_rChild);
+            m_rChild.GetComponent<Room>().SetBrother(m_lChild);
         }
     }
 
@@ -194,12 +215,16 @@ public class Room : MonoBehaviour
     /// </summary>
     void DivideVertically()
     {
-        //Calculate offset
-        int offset = (int)(m_width * 0.1);
-        //if (m_width - offset * 2 > 20)
+        //We are able to create a room
+        BSPDungeon dungeon = GameObject.FindObjectOfType<BSPDungeon>();
+        float minSize = dungeon.GetMinSize();
+        if (m_width > minSize)
         {
             //We are able to create a room
-            float randomX = Random.Range(offset, (int)m_width - offset);
+            float randomX = Random.Range(minSize, (int)m_width - minSize);
+            m_divideH = false;
+            m_divisionPos = randomX;
+
             //Divide and create two new rooms
             float lWidth = randomX;
             float rWidth = m_width - randomX;
@@ -210,6 +235,8 @@ public class Room : MonoBehaviour
 
             CreateChild(lCenter, lWidth, m_height, true);
             CreateChild(rCenter, rWidth, m_height, false);
+            m_lChild.GetComponent<Room>().SetBrother(m_rChild);
+            m_rChild.GetComponent<Room>().SetBrother(m_lChild);
         }
     }
 
@@ -222,13 +249,92 @@ public class Room : MonoBehaviour
             m_quad.transform.SetParent(transform);
             BSPDungeon dungeon = GameObject.FindObjectOfType<BSPDungeon>();
             dungeon.AddLeaf(this);
+
+            foreach(Door d in m_doors)
+            {
+                //Create a door
+                GameObject door;
+                if(d.position == 'u' || d.position == 'd')
+                {
+                    door = m_assetFabric.GetDoor(d.center, d.size, false);
+                }
+                else
+                {
+                    door = m_assetFabric.GetDoor(d.center, d.size, true);
+                }
+
+                if(door != null)
+                {
+                    door.transform.SetParent(transform);
+                }
+            }
         }
         else
         {
+
             m_lChild.GetComponent<Room>().Create();
             m_rChild.GetComponent<Room>().Create();
         }
     }
 
+    public void CreateChildrenDoors()
+    {
+        if(!m_doorsCreated && !IsLeaf())
+        {
+            m_doorsCreated = true;
+            //Create a door randomly in the line defined by division pos
+            if(m_divideH)
+            {
+                float randomX = Random.Range(4.0f, m_width - 4.0f);
+                //Calculate center using randomX and m_divPos
+                Vector3 letfBottomMost = m_center - new Vector3(m_width * 0.5f, m_height * 0.5f, 0.0f);
+                Vector3 center = letfBottomMost + new Vector3(randomX, m_divisionPos, 0.0f);
+                center.z = -0.2f;
+                //Create up/down door
+                Door upDoor = CreateDoor('u', center, 4.0f);
+                Door downDoor = CreateDoor('d', center, 4.0f);
+                m_lChild.GetComponent<Room>().AddDoor(downDoor);
+                m_rChild.GetComponent<Room>().AddDoor(upDoor);
+            }
+            else
+            {
+                //Create left/right door
+                float randomY = Random.Range(4.0f, m_height - 4.0f);
+                //Calculate center using randomX and m_divPos
+                Vector3 topBottomMost = m_center - new Vector3(m_width * 0.5f, m_height * 0.5f, 0.0f);
+                Vector3 center = topBottomMost + new Vector3(m_divisionPos, randomY, 0.0f);
+                center.z = -0.2f;
+                //Create up/down door
+                Door rightDoor = CreateDoor('r', center, 4.0f);
+                Door leftDoor = CreateDoor('l', center, 4.0f);
+                m_rChild.GetComponent<Room>().AddDoor(leftDoor);
+                m_lChild.GetComponent<Room>().AddDoor(rightDoor);
+
+            }
+        }
+    }
+
+    Door CreateDoor(char pos, Vector3 center, float size)
+    {
+        Door newDoor;
+        newDoor.position = pos;
+        newDoor.center = center;
+        newDoor.size = size;
+
+        return newDoor;
+    }
+
+    public void AddDoor(Door door)
+    {
+        m_doors.Add(door);
+        if(m_lChild != null)
+        {
+            m_lChild.GetComponent<Room>().AddDoor(door);
+        }
+        if(m_rChild != null)
+        {
+            m_rChild.GetComponent<Room>().AddDoor(door);
+        }
+    }
 
 }

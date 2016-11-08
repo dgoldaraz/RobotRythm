@@ -7,6 +7,8 @@ public class AssetFabric : MonoBehaviour
     public GameObject quadTemplate;
     public Material bricksMaterial;
 
+    public GameObject doorsTemplate;
+
 
     public GameObject GetRandomRoom(float w, float h, Vector3 center)
     {
@@ -81,5 +83,16 @@ public class AssetFabric : MonoBehaviour
         wall.GetComponent<MeshRenderer>().material = hMaterial;
 
         return wall;
+    }
+
+    public GameObject GetDoor(Vector3 center, float w, bool rotate)
+    {
+        GameObject door = Instantiate(doorsTemplate, center, Quaternion.identity) as GameObject;
+        door.transform.localScale = new Vector3(w, 1.0f, 1.0f);
+        if(rotate)
+        {
+            door.transform.localEulerAngles = new Vector3(0.0f, 0.0f, 90.0f);
+        }
+        return door;
     }
 }

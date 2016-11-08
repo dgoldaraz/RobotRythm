@@ -14,9 +14,10 @@ public class BSPDungeon : MonoBehaviour
     public float initialW = 100;
     public float initialH = 100;
     public int divisionTimes = 1;
+    public float minRoomSize = 20.0f;
 
-	// Use this for initialization
-	void Start ()
+    // Use this for initialization
+    void Start ()
     {
         leafNodes = new List<Room>();
         //Create mainRoom
@@ -29,15 +30,9 @@ public class BSPDungeon : MonoBehaviour
         roomComponent.SetHeight(initialH);
         roomComponent.SetCenter(transform.position);
         DivideRooms();
-        
+        CreateDoors();
         roomComponent.Create();
     }
-	
-	// Update is called once per frame
-	void Update ()
-    {
-	
-	}
 
     public void AddLeaf(Room leaf)
     {
@@ -56,6 +51,41 @@ public class BSPDungeon : MonoBehaviour
         {
             m_root.GetComponent<Room>().Divide();
         }
+    }
+
+    public float GetMinSize()
+    {
+        return minRoomSize;
+    }
+
+    void CreateDoors()
+    {
+        List<Room> roomsToCreateDoors = leafNodes; //Stores all the rooms that need to create a door
+        while(roomsToCreateDoors.Count > 0)
+        {
+            Room r = roomsToCreateDoors[0];
+            if(r.GetBrother())
+            {
+                Room brother = r.GetBrother().GetComponent<Room>();
+                roomsToCreateDoors.Remove(brother);
+            }
+
+            //Remove brother from the list
+            //And I
+            roomsToCreateDoors.Remove(r);
+
+            //Get Parent
+            GameObject parent = r.GetParent();
+            if(parent)
+            {
+                //Add parent to the list
+                roomsToCreateDoors.Add(parent.GetComponent<Room>());
+                //Create a door
+                parent.GetComponent<Room>().CreateChildrenDoors();
+            }
+           
+        }
+
     }
 
 }
