@@ -65,7 +65,9 @@
   <ItemGroup>
     <Compile Include="Assets\Scripts\AssetFabric.cs" />
     <Compile Include="Assets\Scripts\BSPDungeon.cs" />
+    <Compile Include="Assets\Scripts\Player.cs" />
     <Compile Include="Assets\Scripts\Room.cs" />
+    <Compile Include="Assets\Scripts\RythmGenerator.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\SyntaxTree\UnityVS\2015\UnityVS.CSharp.targets" />
 </Project>

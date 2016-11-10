@@ -16,6 +16,9 @@ public class BSPDungeon : MonoBehaviour
     public int divisionTimes = 1;
     public float minRoomSize = 20.0f;
 
+    public GameObject playerTemplate;
+
+
     // Use this for initialization
     void Start ()
     {
